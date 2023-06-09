@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const jwt = require('jsonwebtoken');
 const app = express();
@@ -46,11 +46,13 @@ async function run() {
 
 
         const usersCollection = client.db("sportsDB").collection("users");
+        const classesCollection = client.db("sportsDB").collection("classes");
+        const cartsCollection = client.db("sportsDB").collection("carts")
 
         // jwt
         app.post('/jwt', (req, res) => {
             const user = req.body;
-            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' })
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
 
             res.send({ token })
         })
@@ -141,7 +143,7 @@ async function run() {
 
 
         // users api
-        app.get('/users', verifyJWT, verifyAdmin, verifyInstructor, async (req, res) => {
+        app.get('/users', async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result);
         });
@@ -160,6 +162,29 @@ async function run() {
             res.send(result);
         });
 
+        // class api
+        app.get('/classes', async (req, res) => {
+            const result = await classesCollection.find().toArray();
+            res.send(result);
+        })
+
+        app.post('/classes', async (req, res) => {
+            const newItem = req.body;
+            const result = await classesCollection.insertOne(newItem)
+            res.send(result);
+        })
+
+        // cart api
+        app.get('/carts', async (req, res) => {
+            const result = await cartsCollection.find().toArray();
+            res.send(result);
+        })
+
+        app.post('/carts', async (req, res) => {
+            const newItem = req.body;
+            const result = await cartsCollection.insertOne(newItem)
+            res.send(result);
+        })
 
 
         // Send a ping to confirm a successful connection

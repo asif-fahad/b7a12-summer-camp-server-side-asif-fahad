@@ -141,7 +141,7 @@ async function run() {
 
 
         // users api
-        app.get('/users', verifyJWT, verifyAdmin, verifyInstructor async (req, res) => {
+        app.get('/users', verifyJWT, verifyAdmin, verifyInstructor, async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result);
         });

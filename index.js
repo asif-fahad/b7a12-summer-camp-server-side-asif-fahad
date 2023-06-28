@@ -5,8 +5,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const jwt = require('jsonwebtoken');
 const port = process.env.PORT || 5000;
-const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
-
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY);
 
 // middleware
 const corsOptions = {
@@ -60,7 +59,7 @@ async function run() {
         const usersCollection = client.db("sportsDB").collection("users");
         const classesCollection = client.db("sportsDB").collection("classes");
         const cartsCollection = client.db("sportsDB").collection("carts")
-        const paymentCollection = client.db("sportsDB").collection("payment");
+        const paymentCollection = client.db("sportsDB").collection("payments");
 
         // jwt
         app.post("/jwt", (req, res) => {
@@ -304,7 +303,7 @@ async function run() {
         // selected class cart
         app.get("/selectClasses/:email", verifyJWT, async (req, res) => {
             const email = req.params.email;
-            const query = { userEmail: email };
+            const query = { email: email };
             const result = await cartsCollection.find(query).toArray();
             res.send(result);
         });
@@ -322,35 +321,23 @@ async function run() {
             res.send(classes);
         });
 
-
         // payment
-        app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+        app.post('/create-payment-intent', verifyJWT, async (req, res) => {
             const { price } = req.body;
             const amount = parseInt(price * 100);
             const paymentIntent = await stripe.paymentIntents.create({
                 amount: amount,
-                currency: "usd",
-                payment_method_types: ["card"],
+                currency: 'usd',
+                payment_method_types: ['card']
             });
 
             res.send({
-                clientSecret: paymentIntent.client_secret,
-            });
-        });
+                clientSecret: paymentIntent.client_secret
+            })
+        })
 
-        app.get("/payments/:email", verifyJWT, async (req, res) => {
-            const email = req.params.email;
-            const query = { email: email };
-            const result = await paymentCollection
-                .find(query)
-                .sort({ date: -1 })
-                .toArray();
-            res.send(result);
-        });
-
-        app.post("/payments", verifyJWT, async (req, res) => {
+        app.post('/payments', verifyJWT, async (req, res) => {
             const payment = req.body;
-            console.log(payment);
             const insertResult = await paymentCollection.insertOne(payment);
 
             const query = {
@@ -368,7 +355,20 @@ async function run() {
             const deleteResult = await cartsCollection.deleteOne(query);
 
             res.send({ insertResult, deleteResult, updateSeats });
+            // res.send(result)
+        })
+
+        app.get("/payments/:email", verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const result = await paymentCollection
+                .find(query)
+                .sort({ date: -1 })
+                .toArray();
+            res.send(result);
         });
+
+
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
